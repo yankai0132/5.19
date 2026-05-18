@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh">
+
+<head>
+<meta charset="UTF-8">
+<title>考场座位导航系统</title>
+
+<style>
+
+body{
+    font-family:Arial;
+    background:#f5f5f5;
+    text-align:center;
+}
+
+.box{
+    width:1600px;
+    margin:auto;
+    margin-top:20px;
+    background:white;
+    padding:30px;
+    border-radius:10px;
+    box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+h1{ margin-bottom:30px; }
+
+input,select{
+    width:240px;
+    height:40px;
+    font-size:16px;
+    margin:10px;
+    padding-left:10px;
+}
+
+button{
+    width:130px;
+    height:42px;
+    font-size:16px;
+    cursor:pointer;
+}
+
+#result{
+    margin-top:20px;
+    font-size:20px;
+    font-weight:bold;
+}
+
+.classroom{
+    margin-top:50px;
+    position:relative;
+    padding:90px 140px;
+}
+
+#mapContainer{
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+}
+
+.section{
+    display:grid;
+    gap:8px;
+    padding:15px;
+    border-radius:12px;
+}
+
+.section-1{ background:#e3f2fd; }
+.section-2{ background:#e8f5e9; }
+.section-3{ background:#fff3e0; }
+
+.grid-cell{
+    width:52px;
+    height:52px;
+    border-radius:8px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+}
+
+.seat{
+    background:#e5e5e5;
+    cursor:pointer;
+}
+
+.active{
+    background:#4CAF50 !important;
+    color:white;
+    font-weight:bold;
+}
+
+.empty{ background:transparent; }
+
+.label{
+    background:transparent;
+    font-weight:bold;
+}
+
+.walkway{
+    width:80px;
+    align-self:stretch;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    writing-mode:vertical-rl;
+    letter-spacing:6px;
+    background-color:#ececec;
+    background-image:
+        repeating-linear-gradient(
+            to bottom,
+            transparent,
+            transparent 14px,
+            #c8c8c8 14px,
+            #c8c8c8 28px
+        ),
+        repeating-linear-gradient(
+            to bottom,
+            #f5f5f5,
+            #f5f5f5 4px,
+            #e8e8e8 4px,
+            #e8e8e8 8px
+        );
+    border-radius:10px;
+    box-shadow:inset 0 0 10px rgba(0,0,0,0.08);
+    font-weight:bold;
+    color:#888;
+    font-size:16px;
+}
+
+.door{
+    position:absolute;
+    color:white;
+    padding:15px 20px;
+    border-radius:10px;
+    font-size:20px;
+    z-index:10;
+}
+
+.front-door{ background:#2196F3; }
+.back-door { background:#FF9800; }
+
+.door-206-front{ top:30px;    left:20px;  }
+.door-206-back { bottom:20px; right:20px; }
+
+.door-203-front{ top:30px;    left:20px;  }
+.door-203-back { bottom:20px; left:20px;  }
+
+.door-207-front{ top:30px;    right:20px; }
+.door-207-back { bottom:20px; right:20px; }
+
+.tip{
+    margin-top:20px;
+    padding:12px 20px;
+    background:#e3f2fd;
+    border-radius:8px;
+    font-size:14px;
+    color:#555;
+    display:inline-block;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<h1>考场座位导航系统</h1>
+
+<select id="classroomSelect">
+    <option value="">请选择教室</option>
+    <option value="综C203">综C203</option>
+    <option value="综C206">综C206</option>
+    <option value="综C207">综C207</option>
+</select>
+
+<br>
+
+<input type="text" id="seatInput" placeholder="请输入座位号">
+
+<button onclick="findSeat()">查询座位</button>
+
+<div id="result"></div>
+
+<div class="classroom" id="classroomContainer">
+    <div id="mapContainer"></div>
+</div>
+
+<div class="tip">
+    ℹ️ 提示：&nbsp;&nbsp;
+    1. 输入座位号后点击"查询座位"可定位座位&nbsp;&nbsp;&nbsp;&nbsp;
+    2. 点击座位可直接查询该座位
+</div>
+
+</div>
+
+<script>
+
+const classrooms = {
+
+    "综C203":{
+        frontDoorClass:"door-203-front",
+        backDoorClass :"door-203-back",
+        layout:[
+            [
+                [1 ,null,22,null,23],
+                [2 ,null,21,null,24],
+                [3 ,null,20,null,25],
+                [4 ,null,19,null,26],
+                [5 ,null,18,null,27],
+                [6 ,null,17,null,28],
+                [7 ,null,16,null,29],
+                [8 ,null,15,null,30],
+                [9 ,null,14,null,31],
+                [10,null,13,null,32],
+                [11,null,12,null,33]
+            ],
+            [
+                [44,null,45,null,66,null,67],
+                [43,null,46,null,65,null,68],
+                [42,null,47,null,64,null,69],
+                [41,null,48,null,63,null,70],
+                [40,null,49,null,62,null,71],
+                [39,null,50,null,61,null,72],
+                [38,null,51,null,60,null,73],
+                [37,null,52,null,59,null,74],
+                [36,null,53,null,58,null,75],
+                [35,null,54,null,57,null,76],
+                [34,null,55,null,56,null,77]
+            ],
+            [
+                [88,null,89],
+                [87,null,90],
+                [86,null,91],
+                [85,null,92],
+                [84,null,93],
+                [83,null,94],
+                [82,null,95],
+                [81,null,96],
+                [80,null,97],
+                [79,null,98],
+                [78,null,99]
+            ]
+        ]
+    },
+
+    "综C206":{
+        frontDoorClass:"door-206-front",
+        backDoorClass :"door-206-back",
+        layout:[
+            [
+                [1 ,null,12,null,23],
+                [2 ,null,13,null,24],
+                [3 ,null,14,null,25],
+                [4 ,null,15,null,26],
+                [5 ,null,16,null,27],
+                [6 ,null,17,null,28],
+                [7 ,null,18,null,29],
+                [8 ,null,19,null,30],
+                [9 ,null,20,null,31],
+                [10,null,21,null,32],
+                [11,null,22,null,33]
+            ],
+            [
+                [34,null,53,null,54,null,73,null,74,null,93,null],
+                [35,null,52,null,55,null,72,null,75,null,92,null],
+                [36,null,51,null,56,null,71,null,76,null,91,null],
+                [37,null,50,null,57,null,70,null,77,null,90,null],
+                [38,null,49,null,58,null,69,null,78,null,89,null],
+                [39,null,48,null,59,null,68,null,79,null,88,null],
+                [40,null,47,null,60,null,67,null,80,null,87,null],
+                [41,null,46,null,61,null,66,null,81,null,86,null],
+                [42,null,45,null,62,null,65,null,82,null,85,null],
+                [43,null,44,null,63,null,64,null,83,null,84,null]
+            ],
+            [
+                [94 ,null,115],
+                [95 ,null,114],
+                [96 ,null,113],
+                [97 ,null,112],
+                [98 ,null,111],
+                [99 ,null,110],
+                [100,null,109],
+                [101,null,108],
+                [102,null,107],
+                [103,null,106],
+                [104,null,105]
+            ]
+        ]
+    },
+
+    "综C207":{
+        frontDoorClass:"door-207-front",
+        backDoorClass :"door-207-back",
+        layout:[
+            [
+                [113,null,112,null, 85,null, 84,null, 57,null, 56],
+                [114,null,111,null, 86,null, 83,null, 58,null, 55],
+                [115,null,110,null, 87,null, 82,null, 59,null, 54],
+                [116,null,109,null, 88,null, 81,null, 60,null, 53],
+                [117,null,108,null, 89,null, 80,null, 61,null, 52],
+                [118,null,107,null, 90,null, 79,null, 62,null, 51],
+                [119,null,106,null, 91,null, 78,null, 63,null, 50],
+                [120,null,105,null, 92,null, 77,null, 64,null, 49],
+                [121,null,104,null, 93,null, 76,null, 65,null, 48],
+                [122,null,103,null, 94,null, 75,null, 66,null, 47],
+                [123,null,102,null, 95,null, 74,null, 67,null, 46],
+                [124,null,101,null, 96,null, 73,null, 68,null, 45],
+                [125,null,100,null, 97,null, 72,null, 69,null, 44],
+                [126,null, 99,null, 98,null, 71,null, 70,null, 43]
+            ],
+            [
+                [29,null,28,null, 1],
+                [30,null,27,null, 2],
+                [31,null,26,null, 3],
+                [32,null,25,null, 4],
+                [33,null,24,null, 5],
+                [34,null,23,null, 6],
+                [35,null,22,null, 7],
+                [36,null,21,null, 8],
+                [37,null,20,null, 9],
+                [38,null,19,null,10],
+                [39,null,18,null,11],
+                [40,null,17,null,12],
+                [41,null,16,null,13],
+                [42,null,15,null,14]
+            ]
+        ]
+    }
+
+};
+
+document.getElementById("classroomSelect")
+    .addEventListener("change", loadClassroom);
+
+function loadClassroom(){
+
+    const classroom = document.getElementById("classroomSelect").value;
+    const mapContainer = document.getElementById("mapContainer");
+    const container = document.getElementById("classroomContainer");
+
+    mapContainer.innerHTML = "";
+    container.querySelectorAll(".door").forEach(d => d.remove());
+
+    if(!(classroom in classrooms)) return;
+
+    const data   = classrooms[classroom];
+    const layout = data.layout;
+
+    const front = document.createElement("div");
+    front.classList.add("door","front-door", data.frontDoorClass);
+    front.innerText = "前门";
+    container.appendChild(front);
+
+    const back = document.createElement("div");
+    back.classList.add("door","back-door", data.backDoorClass);
+    back.innerText = "后门";
+    container.appendChild(back);
+
+    layout.forEach((section, index)=>{
+
+        const sectionDiv = document.createElement("div");
+        sectionDiv.classList.add("section","section-" + (index+1));
+
+        const cols = section[0].length;
+        sectionDiv.style.gridTemplateColumns = `repeat(${cols},52px)`;
+
+        for(let c = 0; c < cols; c++){
+            const label = document.createElement("div");
+            label.classList.add("grid-cell","label");
+            label.innerText = c + 1;
+            sectionDiv.appendChild(label);
+        }
+
+        section.forEach((row, rowIndex)=>{
+            row.forEach((seat, colIndex)=>{
+
+                const cell = document.createElement("div");
+                cell.classList.add("grid-cell");
+
+                if(seat === null){
+                    cell.classList.add("empty");
+                }else{
+                    cell.classList.add("seat");
+                    cell.id = "seat-" + seat;
+                    cell.innerText = seat;
+                    cell.dataset.row = rowIndex + 1;
+                    cell.dataset.col = colIndex + 1;
+                    cell.onclick = () => highlightSeat(seat);
+                }
+
+                sectionDiv.appendChild(cell);
+            });
+        });
+
+        mapContainer.appendChild(sectionDiv);
+
+        if(index !== layout.length - 1){
+            const walkway = document.createElement("div");
+            walkway.classList.add("walkway");
+            walkway.innerText = "走道";
+            mapContainer.appendChild(walkway);
+        }
+    });
+
+    document.getElementById("result").innerHTML =
+        `<span style="color:#2196F3">${classroom}</span> 加载成功`;
+}
+
+function highlightSeat(seatNumber){
+
+    document.querySelectorAll(".seat")
+        .forEach(s => s.classList.remove("active"));
+
+    const target = document.getElementById("seat-" + seatNumber);
+
+    if(!target){
+        document.getElementById("result").innerHTML = "未找到该座位";
+        return;
+    }
+
+    target.classList.add("active");
+    target.scrollIntoView({ behavior:"smooth", block:"center" });
+
+    document.getElementById("result").innerHTML =
+        "已定位：座位号 <b>" + seatNumber + "</b>" +
+        "（第 " + target.dataset.row + " 行，第 " + target.dataset.col + " 列）";
+}
+
+function findSeat(){
+
+    const seatNumber = parseInt(
+        document.getElementById("seatInput").value
+    );
+
+    if(isNaN(seatNumber)){
+        document.getElementById("result").innerHTML = "请输入正确座位号";
+        return;
+    }
+
+    highlightSeat(seatNumber);
+}
+
+</script>
+
+</body>
+</html>
