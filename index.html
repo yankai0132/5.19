@@ -141,7 +141,7 @@ button{
 .back-door { background:#FF9800; }
 
 .door-206-front{ top:30px;    left:20px;  }
-.door-206-back { bottom:20px; right:20px; }
+.door-206-back { bottom:20px; left:20px; }
 
 .door-203-front{ top:30px;    left:20px;  }
 .door-203-back { bottom:20px; left:20px;  }
@@ -369,7 +369,11 @@ function loadClassroom(){
         for(let c = 0; c < cols; c++){
             const label = document.createElement("div");
             label.classList.add("grid-cell","label");
+            if(classroom=="综C207"){
+                label.innerText=cols - c;
+            }else{
             label.innerText = c + 1;
+            }
             sectionDiv.appendChild(label);
         }
 
