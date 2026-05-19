@@ -390,7 +390,10 @@ function loadClassroom(){
                     cell.id = "seat-" + seat;
                     cell.innerText = seat;
                     cell.dataset.row = rowIndex + 1;
-                    cell.dataset.col = colIndex + 1;
+                    if(classroom=="综C207"){
+                        cell.dataset.col=cols - colIndex;
+                    }else{
+                    cell.dataset.col = colIndex + 1;}
                     cell.onclick = () => highlightSeat(seat);
                 }
 
